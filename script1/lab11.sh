@@ -1,4 +1,4 @@
-#!/usr/bin/ksh
+#!/usr/bin/ksh -x
 
 MENU="1. Напечатать имя текущего каталога
 2. Создать файл
@@ -16,9 +16,11 @@ NWFPROMPT="Введите новое имя файла:"
 
 EOFMSG="Поток ввода закончился, выход из скрипта"
 
+ERRFILE="$HOME/lab1_err"
+
 pause() {
 	local dummy
-	print "$CONTPROMPT"
+	print -n "$CONTPROMPT"
 	read -r dummy
 	if (( $? != 0 )) # EOF encountered, must exit
 	then
@@ -28,11 +30,13 @@ pause() {
 }
 
 pathconv() {
-	case "$filename" in
+	case "${filename}" in
 	/*)
 	;;
+	./*)
+	;;
 	*)
-	filename="./$filename";;
+	filename="./${filename}";;
 	esac
 }
 
@@ -48,8 +52,8 @@ do
 	esac
 	case "$REPLY" in
 		1)
-		echo `pwd`
-		pause;;
+		echo `pwd` 2>>${ERRFILE}
+		;;
 		2) #############################################################
 		#Create a file
 		print "$NFPROMPT"
@@ -60,10 +64,10 @@ do
 		fi
 		pathconv			#this guy will let us work with filenames
 						#starting with -, [, et c. (from asd to ./asd)
-		#TODO: Error handling (subdirectories do not exist)
-		# or file already exists (in that case just warn the user)
-		touch "$filename"
-		pause
+		2>>${ERRFILE} touch "${filename}" 
+		if (( $? != 0 )); then
+			>&2 echo "Файл не удалось создать"	
+		fi
 		;;
 		3) ##############################################################
 		#Remove permissions for other users
@@ -74,9 +78,10 @@ do
 			exit 0
 		fi
 		pathconv
-		#TODO: Error handling (file does not exist, also reroute the 2 to >lab1_err)
-		chmod o= "$filename"
-		pause
+		2>>${ERRFILE} chmod o= "$filename"
+		if (( $? != 0 )); then
+			>&2 echo "Не удалось изменить права файла. Возможно файл не существует"
+		fi
 		;;
 		4) ##############################################################
 		#Remove writing permissions for owner
@@ -87,8 +92,10 @@ do
 			exit 0
 		fi
 		pathconv
-		#TODO: Same as for number 3
-		chmod u-w "$filename"
+		2>>${ERRFILE} chmod u-w "$filename"
+		if (( $? != 0)); then
+			>&2 echo "Не удалось изменить права файла. Возможно файл не существует"
+		fi
 		;;
 		5) ##############################################################
 		#Rename a file
@@ -108,14 +115,10 @@ do
 		fi
 		pathconv
 		to="$filename"		#read the output filename
-		#TODO: Error handling (input file does not exist)
-		# or subdirectory(ies) to the out file do(es) not exist
-		# or the out file exists, in which case ask for deletion,
-		# if no permissions for deletion, then abort
-		# or if the out file is a dir, then ask 
-		# whether to put the file in there or abort or delete the whole dir
-		# we should check for errors there as well
-		mv "$from" "$to"
+		2>>${ERRFILE} mv "$from" "$to"
+		if (( $? != 0 )); then
+			>&2 echo "Произошла ошибка при переименовании файла"
+		fi
 		;;
 		6)
 		exit 0;
@@ -127,4 +130,3 @@ do
 done
 print "$EOFMSG"
 exit 0
-
