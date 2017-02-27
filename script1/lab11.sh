@@ -29,7 +29,7 @@ do
 	IFS= read -r || DONE=true
 	case "$REPLY" in
 		1)
-		echo `pwd` 2>>${ERRFILE}
+		echo "`pwd`" 2>>${ERRFILE}
 		;;
 		2)
 		# cd
