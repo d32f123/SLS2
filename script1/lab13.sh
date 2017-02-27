@@ -1,10 +1,10 @@
-#!/usr/bin/ksh
+#!/usr/bin/ksh -x
 
 MENU="1. Напечатать имя текущего каталога
-2. Сменить текущий каталог
-3. Напечатать содержимое текущего каталога
-4. Создать файл
-5. Удалить файл
+2. Создать файл
+3. Отменить доступ к файлу для всех остальных пользователей
+4. Отменить право на запись для владельца файла
+5. Переименовать файл
 6. Выйти из программы"
 MMPROMPT="Выберите действие:"
 CONTPROMPT="Нажмите enter, чтобы продолжить..."
@@ -13,9 +13,6 @@ RPOPROMPT="Введите имя файла, для которого следу�
 RWPPROMPT="Введите имя файла, для которого следует убрать права записи:"
 RNMPROMPT="Введите имя файла, который следует переименовать:"
 NWFPROMPT="Введите новое имя файла:"
-DELPROMPT="Введите имя удаляемого файла:"
-CDPROMPT="Введите имя каталога:"
-
 
 EOFMSG="Поток ввода закончился, выход из скрипта"
 
@@ -57,28 +54,7 @@ do
 		1)
 		echo `pwd` 2>>${ERRFILE}
 		;;
-		2)
-		# cd
-			print "$CDPROMPT"
-			IFS= read -r filename || DONE=true
-			if $DONE; then
-				print "$EOFMSG"
-				exit 0
-			fi
-			pathconv
-			2>>${ERRFILE} cd "${filename}"
-			if (( $? != 0 )); then
-				>&2 echo "Не удалось сменить директорию"
-			fi
-		;;
-		3) ##############################################################
-		#Remove permissions for other users
-		2>>${ERRFILE} ls `pwd`
-		if (( $? != 0 )); then
-			>&2 echo "Не удалось распечатать содержимое текущего каталога"
-		fi
-		;;
-		4) #############################################################
+		2) #############################################################
 		#Create a file
 		print "$NFPROMPT"
 		IFS= read -r filename || DONE=true # Read the filename
@@ -93,35 +69,56 @@ do
 			>&2 echo "Файл не удалось создать"	
 		fi
 		;;
+		3) ##############################################################
+		#Remove permissions for other users
+		print "$RPOPROMPT"
+		IFS= read -r filename || DONE=true
+		if $DONE; then
+			print "$EOFMSG"
+			exit 0
+		fi
+		pathconv
+		2>>${ERRFILE} chmod o= "$filename"
+		if (( $? != 0 )); then
+			>&2 echo "Не удалось изменить права файла. Возможно файл не существует"
+		fi
+		;;
+		4) ##############################################################
+		#Remove writing permissions for owner
+		print "$RWPPROMPT"
+		IFS= read -r filename || DONE=true
+		if $DONE; then
+			print "$EOFMSG"
+			exit 0
+		fi
+		pathconv
+		2>>${ERRFILE} chmod u-w "$filename"
+		if (( $? != 0)); then
+			>&2 echo "Не удалось изменить права файла. Возможно файл не существует"
+		fi
+		;;
 		5) ##############################################################
-		#Delete file
-			print "$DELPROMPT"
-			IFS= read -r filename || DONE=true
-			if $DONE; then
-				print "$EOFMSG"
-				exit 0
-			fi
-			pathconv
-			if [[ -e "$filename" ]];
-			then
-			print "rm? yes/no"
-			IFS= read -r confirm || DONE=true
-			if $DONE; then
-				print "$EOFMSG"
-				exit 0
-			fi
-			
-			back=false
-			test "${confirm#*yes}" != "$confirm" && back=true
-			if $back ; then
-			2>>${ERRFILE} rm "${filename}"
-			if (( $? != 0 )); then
-				>&2 echo "Не удалось удалить файл"
-			fi
-			fi
-			else
-				>&2 echo "Файл не найден"
-			fi
+		#Rename a file
+		print "$RNMPROMPT"
+		IFS= read -r filename || DONE=true
+		if $DONE; then
+			print "$EOFMSG"
+			exit 0
+		fi
+		pathconv
+		from="$filename"	#read the input filename
+		print "$NWFPROMPT"
+		IFS= read -r filename || DONE=true
+		if $DONE; then
+			print "$EOFMSG"
+			exit 0
+		fi
+		pathconv
+		to="$filename"		#read the output filename
+		2>>${ERRFILE} mv "$from" "$to"
+		if (( $? != 0 )); then
+			>&2 echo "Произошла ошибка при переименовании файла"
+		fi
 		;;
 		6)
 		exit 0;
