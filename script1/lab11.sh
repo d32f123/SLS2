@@ -1,4 +1,4 @@
-#!/usr/bin/ksh
+#!/usr/bin/bash
 
 MENU="1. Напечатать имя текущего каталога
 2. Сменить текущий каталог
@@ -21,103 +21,72 @@ EOFMSG="Поток ввода закончился, выход из скрипт
 
 ERRFILE="$HOME/lab1_err"
 
-pause() {
-	local dummy
-	print -n "$CONTPROMPT"
-	read -r dummy
-	if (( $? != 0 )) # EOF encountered, must exit
-	then
-		print "$EOFMSG"
-		exit 0
-	fi
-}
-
-pathconv() {
-	case "${filename}" in
-	/*)
-	;;
-	./*)
-	;;
-	*)
-	filename="./${filename}";;
-	esac
-}
-
 DONE=false
 until $DONE
 do
-	print "${MENU}"
-	print "${MMPROMPT}"
+	echo "${MENU}"
+	echo "${MMPROMPT}"
 	IFS= read -r || DONE=true
-	case "$REPLY" in
-		-*)
-		f="./$f";;
-	esac
 	case "$REPLY" in
 		1)
 		echo "`pwd`" 2>>${ERRFILE}
 		;;
 		2)
 		# cd
-			print "$CDPROMPT"
+			echo "$CDPROMPT"
 			IFS= read -r filename || DONE=true
 			if $DONE; then
-				print "$EOFMSG"
+				echo "$EOFMSG"
 				exit 0
 			fi
-			pathconv
-			2>>${ERRFILE} cd "${filename}"
+			2>>${ERRFILE} cd -- "${filename}"
 			if (( $? != 0 )); then
 				>&2 echo "Не удалось сменить директорию"
 			fi
 		;;
 		3) ##############################################################
-		#Remove permissions for other users
-		2>>${ERRFILE} ls `pwd`
+		#LS
+		2>>${ERRFILE} ls "`pwd`"
 		if (( $? != 0 )); then
 			>&2 echo "Не удалось распечатать содержимое текущего каталога"
 		fi
 		;;
 		4) #############################################################
 		#Create a file
-		print "$NFPROMPT"
+		echo "$NFPROMPT"
 		IFS= read -r filename || DONE=true # Read the filename
 		if $DONE; then 			# if we encountered eof though, exit
-			print "$EOFMSG"
+			echo "$EOFMSG"
 			exit 0
 		fi
-		pathconv			#this guy will let us work with filenames
-						#starting with -, [, et c. (from asd to ./asd)
-		2>>${ERRFILE} touch "${filename}" 
+		
+		2>>${ERRFILE} touch -- "${filename}" 
 		if (( $? != 0 )); then
 			>&2 echo "Файл не удалось создать"	
 		fi
 		;;
 		5) ##############################################################
 		#Delete file
-			print "$DELPROMPT"
+			echo "$DELPROMPT"
 			IFS= read -r filename || DONE=true
 			if $DONE; then
-				print "$EOFMSG"
+				echo "$EOFMSG"
 				exit 0
 			fi
-			pathconv
 			if [[ -e "$filename" ]];
 			then
-			print "rm? yes/no"
+			echo "rm? yes/no"
 			IFS= read -r confirm || DONE=true
 			if $DONE; then
-				print "$EOFMSG"
+				echo "$EOFMSG"
 				exit 0
 			fi
 			
-			back=false
-			test "${confirm#*yes}" != "$confirm" && back=true
-			if $back ; then
-			2>>${ERRFILE} rm "${filename}"
-			if (( $? != 0 )); then
-				>&2 echo "Не удалось удалить файл"
-			fi
+			if [[ "$confirm" =~ "yes" ]]; then
+				2>>${ERRFILE} rm -- "${filename}"
+				if (( $? != 0 )); then
+					>&2 echo "Не удалось удалить файл"
+				fi
 			fi
 			else
 				>&2 echo "Файл не найден"
@@ -131,5 +100,5 @@ do
 		;;
 	esac
 done
-print "$EOFMSG"
+echo "$EOFMSG"
 exit 0
