@@ -1,0 +1,55 @@
+#!/usr/bin/bash
+
+WDIR="$PWD"
+
+panic() {
+	echo "$1" >&2
+	exit $2
+}	
+
+directory="`pwd`" || panic "Could not do pwd." 1
+
+if (( $# > 0 ));
+then
+	directory="$1"
+fi
+
+if [ -d "$directory" ];
+then
+	cd "$directory" || panic "Could not cd." 2
+else
+	>&2 echo "Usage: writepipe [directory]
+	directory -- directory where to check the open fifos
+	if directory is omitted, pwd is used"
+	exit 1
+fi
+
+FILES="`ls -la`" || panic "Could not ls." 3
+
+PIPES="`echo "$FILES" | sed -n ' /^p/ { s/[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*//; p; }'`"
+
+ANSWER=""
+for pipe in $PIPES; 
+do
+	FOUT=`fuser "$pipe" 2>/dev/null` || panic "Could not apply fuser." 3
+	for proc in $FOUT;
+	do
+		FDINFO="`pfiles $proc`" || panic "Could not apply pfiles." 4
+		PFILES="`echo \"$FDINFO\" | nawk -f $WDIR/awkscript`"
+		for filename in $PFILES; do	
+			INUM=`ls -i $pipe`
+			INUM=${INUM%% $pipe}
+			AWKINUM=`ls -i $filename`
+			AWKINUM=${AWKINUM%% $filename}
+			if [ $INUM == $AWKINUM ]; then
+				if [ -n "$ANSWER" ]; then
+					ANSWER="$ANSWER
+$pipe"	
+				else
+					ANSWER="$pipe"
+				fi
+			fi
+		done
+	done
+done
+echo "$ANSWER" | sort | uniq

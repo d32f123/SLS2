@@ -1,0 +1,23 @@
+{ 
+	if (NR == 1) { 
+		getline; 
+		next;
+	} 
+	if ($2 !~ /S_IFIFO/)
+	{
+		getline
+		getline
+		next
+	}
+	FS="|"; 
+	getline; 
+	iswrite = 0; 
+	for (i = 1; i < NF; ++i) { 
+		if ($i ~ /O_RDWR|O_WRONLY/) iswrite = 1;
+	} 
+	FS=" "; 
+	getline; 
+	if (iswrite) { 
+		print $1; 
+	} 
+} 
