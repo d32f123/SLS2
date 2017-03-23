@@ -7,7 +7,7 @@ panic() {
 	exit $2
 }	
 
-directory="`pwd`" || panic "Could not do pwd." 1
+directory="`pwd`" || panic "Could not do pwd." 1 	# getting the dir contents
 
 if (( $# > 0 ));
 then
@@ -26,9 +26,11 @@ fi
 
 FILES="`ls -la`" || panic "Could not ls." 3
 
-PIPES="`echo "$FILES" | sed -n ' /^p/ { s/[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*//; p; }'`"
+PIPES="`echo "$FILES" | sed -n ' /^p/ { s/[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*//; p; }'`" # getting pipes
 
 ANSWER=""
+IFS="
+"
 for pipe in $PIPES; 
 do
 	FOUT=`fuser "$pipe" 2>/dev/null` || panic "Could not apply fuser." 3
@@ -53,3 +55,4 @@ $pipe"
 	done
 done
 echo "$ANSWER" | sort | uniq
+IFS=

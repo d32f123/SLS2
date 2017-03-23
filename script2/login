@@ -1,7 +1,54 @@
 #!/bin/bash
 
-GETENTVAR="`getent passwd | awk 'BEGIN { FS = ":" } $7 !~ /ksh|bash|csh|sh|rksh|rbash/ { printf (\"%s\n\", $1) }'`"
-LDAPVAR="`ldaplist -l passwd | sed -n -e '/cn: / { s/[ 	]*cn:[ 	]*//; h; }' -e '/userPassword:[         ]*{[^}]*}!/ { g; p; }'`"
-NOLOGIN="$GETENTVAR
-$LDAPVAR"
-echo "$NOLOGIN" | sort
+panic() {
+	echo "$1" >&2
+	exit $2
+}
+
+addentry() {
+	if [ -z "$LOCKED" ]; then
+		LOCKED="$entry"
+	else
+		LOCKED="$LOCKED
+$1"
+	fi
+}
+
+GETENTPASSWD="`getent passwd`" || panic "Could not exec getent" 1 # getting entries
+SHELLS="$(</etc/shells)" # getting current shells
+SHELLS="`echo \"$SHELLS\" | cut -f 1`" # get the first field (the shell)
+SHELLS="`echo \"$SHELLS\" | awk -e ' BEGIN { ORS = "|" } { print $0 }'`" # replace newlines with |
+
+SHELLS=${SHELLS%%|} # remove the last |
+SHELLS=${SHELLS//\//\\\/} # place a \ before every / so that awk regex does not break
+SUSPICIOUS="`echo \"$GETENTPASSWD\" | nawk -f awklogin reg=\"$SHELLS\"`" # getting users with
+								# shells not from the shells list
+LOCKED=""
+IFS="
+"
+for entry in $SUSPICIOUS; do
+	SHELLENTRY="`echo \"$entry\" | cut -f 7 -d :`" 	# getting the user's shell
+	if ! [ -f "$SHELLENTRY" ]; then			# if there is no even such a file
+		addentry "$entry"			# then this user is definitely a
+		continue				# locked one
+	fi
+	if ( file "$SHELLENTRY" | grep "executable" ); then
+		echo "it is exec"
+		entryuid="`echo \"$entry\" | cut -f 3 -d :`"
+		entrygid="`echo \"$entry\" | cut -f 4 -d :`"
+		fileuid="`ls -na \"$SHELLENTRY\" | cut -f 3`"
+		filegid="`ls -na \"$SHELLENTRY\" | cut -f 4`"
+		if [ "$entryuid" == "$fileuid" ]; then	# check if the owner has exec perms
+			ls -la "$SHELLENTRY" | egrep "^...x" > /dev/null || addentry "$entry"
+		elif [ "$entrygid" == "$filegid" ]; then
+			ls -la "$SHELLENTRY" | egrep "^......x" > /dev/null || addentry "$entry"
+		else
+			ls -la "$SHELLENTRY" | egrep "^.........x" > /dev/null || addentry "$entry"
+		fi
+	else						# if the file is not an exec
+		addentry "$entry"			# then this user is a locked one
+	fi
+done
+
+echo "$LOCKED" | sort
+IFS=
