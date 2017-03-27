@@ -33,6 +33,7 @@ IFS="
 "
 for pipe in $PIPES; 
 do
+	IFS=" "
 	FOUT=`fuser "$pipe" 2>/dev/null` || panic "Could not apply fuser." 3
 	for proc in $FOUT;
 	do
@@ -53,6 +54,8 @@ $pipe"
 			fi
 		done
 	done
+	IFS="
+"
 done
 echo "$ANSWER" | sort | uniq
 IFS=
