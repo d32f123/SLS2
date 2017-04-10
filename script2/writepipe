@@ -1,13 +1,11 @@
-#!/usr/bin/bash --
-
-WDIR="$PWD"
+#!/bin/bash
 
 panic() {
 	echo "$1" >&2
 	exit $2
-}	
+}
 
-directory="`pwd`" || panic "Could not do pwd." 1 	# getting the dir contents
+directory="$PWD"
 
 if (( $# > 0 ));
 then
@@ -24,38 +22,4 @@ else
 	exit 1
 fi
 
-FILES="`ls -la`" || panic "Could not ls." 3
-
-PIPES="`echo "$FILES" | sed -n ' /^p/ { s/[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*[^ 	]*[ 	]*//; p; }'`" # getting pipes
-
-ANSWER=""
-IFS="
-"
-for pipe in $PIPES; 
-do
-	IFS=" "
-	FOUT=`fuser "$pipe" 2>/dev/null` || panic "Could not apply fuser." 3
-	for proc in $FOUT;
-	do
-		FDINFO="`pfiles $proc`" || panic "Could not apply pfiles." 4
-		PFILES="`echo \"$FDINFO\" | nawk -f $WDIR/awkscript`"
-		for filename in $PFILES; do	
-			INUM=`ls -i $pipe`
-			INUM=${INUM%% $pipe}
-			AWKINUM=`ls -i $filename`
-			AWKINUM=${AWKINUM%% $filename}
-			if [ $INUM == $AWKINUM ]; then
-				if [ -n "$ANSWER" ]; then
-					ANSWER="$ANSWER
-$pipe"	
-				else
-					ANSWER="$pipe"
-				fi
-			fi
-		done
-	done
-	IFS="
-"
-done
-echo "$ANSWER" | sort | uniq
-IFS=
+gfind . -type p -exec bash -c 'for proc in `fuser "$1" 2>/dev/null`; do FID=`ls -i "$1" | awk -f awkscript`; pfiles $proc | ggrep -A2 "$FID" | ggrep -A2 "S_IFIFO" | ggrep -A1 "O_RDWR" >/dev/null && exit 0; done; exit 1' _ {} \; -print
