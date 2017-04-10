@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash --
 
 panic() {
 	echo "$1" >&2
@@ -33,7 +33,6 @@ for entry in $SUSPICIOUS; do
 		continue				# locked one
 	fi
 	if ( file "$SHELLENTRY" | grep "executable" ); then
-		echo "it is exec"
 		entryuid="`echo \"$entry\" | cut -f 3 -d :`"
 		entrygid="`echo \"$entry\" | cut -f 4 -d :`"
 		fileuid="`ls -na \"$SHELLENTRY\" | cut -f 3`"
