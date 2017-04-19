@@ -13,7 +13,8 @@ $2\""
 isZFS=false
 ls -vdq | egrep "deny|allow" >/dev/null && isZFS=true
 
-set "`getent passwd | grep \"^$1\" | cut -d: -f 3`"
+username="$1"
+set "`getent passwd | grep \"^$1:\" | cut -d: -f 3`"
 
 FILES="`ls -nq | grep \"^-\"`"
 IFS="
@@ -29,7 +30,7 @@ for file in $FILES; do
 		[ "$1" == "$owner" ] && isOwner=true || isOwner=false
 		isGroup=false
 		getent passwd | grep "^[^:]*:[^:]*:$1:" | cut -d: -f 4 | grep "^$gid$" >/dev/null && isGroup=true
-		getent group | grep "^[^:]*:[^:]*:$gid:" | cut -d: -f 4 | egrep "$1" >/dev/null && isGroup=true
+		getent group | grep "^[^:]*:[^:]*:$gid:" | cut -d: -f 4 | egrep ",*$username,*" >/dev/null && isGroup=true
 		for rule in $RULES; do
 			case "`echo $rule | cut -d: -f 1`" in
 				owner@)
@@ -61,7 +62,7 @@ for file in $FILES; do
 				;;
 				group)
 				filegid="`getent group | grep \"^\`echo $rule | cut -d: -f 2 \`:\" | cut -d: -f 3`"
-				if ( getent passwd | grep "^$1:" | cut -d: -f 4 | grep "^$filegid$" >/dev/null ) || ( getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" >/dev/null ); then
+				if ( getent passwd | grep "^[^:]*:[^:]*:$1:" | cut -d: -f 4 | grep "^$filegid$" >/dev/null ) || ( getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" >/dev/null ); then
 					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null || continue
 					echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null && addvariable "GOODFILES" "$file"
 					break
@@ -70,15 +71,15 @@ for file in $FILES; do
 			esac
 		done
 	else
-		RULES="`getfacl -- \"$file\" | sed '/^#/d; /^[ \t]*$/d'`"
+		RULES="`getfacl -- \"$filename\" | sed '/^#/d; /^[ \t]*$/d'`"
 		IFS="
 "
 		for rule in $RULES; do
 			case "`echo $rule | cut -d: -f 1`" in
 				user)
 				user="`echo $rule | cut -d: -f 2`"
-				user=${user:="`getfacl -- \"$rule\" | grep "^# owner" | cut -d" " -f 3`"}
-				user="`getent passwd | grep \"^$user:\" | awk '{ print $3 }'`"
+				user=${user:="`getfacl -- \"$filename\" | grep \"^# owner\" | awk '{ print $3 }'`"}
+				user="`getent passwd | grep \"^$user:\" | cut -d: -f 3`"
 				if [ "$1" == "$user" ] ; then
 					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$file"
 					break
@@ -86,9 +87,9 @@ for file in $FILES; do
 				;;
 				group)
 				gname="`echo $rule | cut -d: -f 2`"
-				gname=${gname:="`getfacl -- \"$1\" | grep "^# group" | awk '{ print $3 }'`"}
+				gname=${gname:="`getfacl -- \"$filename\" | grep "^# group" | awk '{ print $3 }'`"}
 				filegid="`getent group | grep \"^$gname:\" | cut -d: -f 3`"
-				if ( getent passwd | grep "^$1:" | cut -d: -f 4 | grep "^$filegid$" ) || ( getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" ); then
+				if ( getent passwd | grep "^[^:]*:[^:]*:$1:" | cut -d: -f 4 | grep "^$filegid$" >/dev/null || getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" >/dev/null ); then
 					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$file"
 					break
 				fi
