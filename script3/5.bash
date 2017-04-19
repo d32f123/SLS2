@@ -145,9 +145,50 @@ $user" || continue
 	done
 
 else			#interacting with posix ACL
-
-	echo "$doSomething"
-
+	RULES="`getfacl -- \"$1\" | sed '/^#/d; /^[ \t]*$/d'`"
+	IFS="
+"
+	for rule in $RULES; do
+		case "`echo $rule | cut -d: -f 1`" in
+			user)
+			user="`getent passwd | grep \"\`echo $rule | cut -d: -f 2\`\" | cut -d: -f 3`"
+			user=${user:=$OWNER}
+			echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null && addentry "$user" || addbadentry "$user"
+			;;
+			group)
+			gid="`getent group | grep \"\`echo $rule | cut -d: -f 3 \`\" | cut -d: -f 3`"
+			group=${group:=$GROUP}
+			affected="`getent passwd | gawk -F: -v gid=$gid ' $4 == gid { print $3 } '`"
+			affectedNames="`getent group | gawk -F: -v gid=$gid ' $3 == gid { print $4 } ' | awk ' BEGIN { RS = "," } { print $0 } '`"
+			affectedUIDs=""
+			for name in $affectedNames; do
+				addvariable "affectedUIDs" "`getent passwd | grep \"$name\" | cut -d: -f 3`"
+			done
+			addvariable "affected" "$affectedUIDs"
+			if ( echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null ); then
+				for user in $affected; do
+					addentry "$user"
+				done
+			else
+				for user in $affected; do
+					addbadentry "$user"
+				done
+			fi
+			;;
+			other)
+			affected="`getent passwd | cut -d: -f 3`"
+			if ( echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null ); then
+				for user in $affected; do
+					addentry "$user"
+				done
+			else
+				for user in $affected; do
+					addbadentry "$user"
+				done	
+			fi
+			;;
+		esac
+	done
 fi
 
 echo "$USERS"
