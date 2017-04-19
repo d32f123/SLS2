@@ -151,13 +151,15 @@ else			#interacting with posix ACL
 	for rule in $RULES; do
 		case "`echo $rule | cut -d: -f 1`" in
 			user)
-			user="`getent passwd | grep \"\`echo $rule | cut -d: -f 2\`\" | cut -d: -f 3`"
-			user=${user:=$OWNER}
+			uname="`echo $rule | cut -d: -f 2`"
+			uname=${uname:=$OWNER}
+			user="`getent passwd | grep \"$uname\" | cut -d: -f 3`"
 			echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null && addentry "$user" || addbadentry "$user"
 			;;
 			group)
-			gid="`getent group | grep \"\`echo $rule | cut -d: -f 3 \`\" | cut -d: -f 3`"
-			group=${group:=$GROUP}
+			gname="`echo $rule | cut -d: -f 2`"
+			gname=${gname:=$GROUP}
+			gid="`getent group | grep \"$gname\" | cut -d: -f 3`"
 			affected="`getent passwd | gawk -F: -v gid=$gid ' $4 == gid { print $3 } '`"
 			affectedNames="`getent group | gawk -F: -v gid=$gid ' $3 == gid { print $4 } ' | awk ' BEGIN { RS = "," } { print $0 } '`"
 			affectedUIDs=""
