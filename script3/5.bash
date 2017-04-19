@@ -17,7 +17,7 @@ $2\""
 
 addbadentry() {
 	if ! ( echo "$USERS" | grep "$1" >/dev/null || echo "$DENIEDUSERS" | grep "$1" >/dev/null ); then
-		if [ -z "$USERS" ]; then
+		if [ -z "$DENIEDUSERS" ]; then
 			DENIEDUSERS="$1"
 		else
 			DENIEDUSERS="$DENIEDUSERS
@@ -27,7 +27,7 @@ $1"
 }
 
 addentry() {
-	if ! ( echo "$USERS" | grep "$1" >/dev/null || echo "$DENIEDUSERS" | grep "$1" /dev/null ); then
+	if ! ( echo "$USERS" | grep "$1" >/dev/null || echo "$DENIEDUSERS" | grep "$1" >/dev/null ); then
 		if [ -z "$USERS" ]; then
 			USERS="$1"
 		else
@@ -47,8 +47,8 @@ ls -vdq -- "$1" | egrep "deny|allow" >/dev/null && isZFS=true
 # as of now not the top-most one
 # once we get through the whole list, we can just output our USERS list and job done
 
-USERS=""
-DENIEDUSERS=""
+export USERS=""
+export DENIEDUSERS=""
 OWNER="`ls -dnq -- \"$1\" | awk ' { print $3 } '`" # get owner ID
 GROUP="`ls -dnq -- \"$1\" | awk ' { print $4 } '`" # get main group ID
 
@@ -63,13 +63,14 @@ if $isZFS ; then 	#interacting with zfs ACL
 		case "`echo $rule | cut -d: -f 1`" in
 			owner@)
 			if ! $ownerRule; then
-				echo "$rule" | cut -d: -f 2 | grep "^r" >/dev/null && ownerRule=true && ( echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addentry "$OWNER" || addbadentry "$OWNER" )
+				echo "$rule" | cut -d: -f 2 | grep "^r" >/dev/null && ownerRule=true || continue
+				echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addentry "$OWNER" || addbadentry "$OWNER"
 			fi
 			;;
 			group@)
 			if ! ( echo "$foundRules" | grep "group@" >/dev/null ); then 	# if haven't yet encountered a "r" rule
 				echo "$rule" | cut -d: -f 2 | grep "^r" >/dev/null && foundRules="$foundRules
-group@"	# we found a rule
+group@" || continue	# we found a rule
 				# now get the users who are affected by the rule
 				affected="`getent passwd | gawk -F: -v gid=$GROUP ' $4 == gid { print $3 } '`"
 				affectedNames="`getent group | gawk -F: -v gid=$GROUP ' $3 == gid { print $4 } ' | awk ' BEGIN { RS = "," } { print $0 } '`"
