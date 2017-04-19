@@ -6,11 +6,12 @@ panic() {
 }
 
 addentry() {
-	if [ -z "$LOCKED" ]; then
-		LOCKED="$entry"
+	name="`eval echo '$'$1`"
+	if [ -z "$name" ]; then
+		eval "$1=\"$2\""
 	else
-		LOCKED="$LOCKED
-$1"
+		eval "$1=\"\$$1
+$2\""
 	fi
 }
 
@@ -29,7 +30,7 @@ IFS="
 for entry in $SUSPICIOUS; do
 	SHELLENTRY="`echo \"$entry\" | cut -f 7 -d :`" 	# getting the user's shell
 	if ! [ -f "$SHELLENTRY" ]; then			# if there is no even such a file
-		addentry "$entry"			# then this user is definitely a
+		addentry "LOCKED" "$entry"			# then this user is definitely a
 		continue				# locked one
 	fi
 	if ( file "$SHELLENTRY" | grep "executable" ); then
@@ -38,14 +39,14 @@ for entry in $SUSPICIOUS; do
 		fileuid="`ls -na \"$SHELLENTRY\" | cut -f 3`"
 		filegid="`ls -na \"$SHELLENTRY\" | cut -f 4`"
 		if [ "$entryuid" == "$fileuid" ]; then	# check if the owner has exec perms
-			ls -la "$SHELLENTRY" | egrep "^...x" > /dev/null || addentry "$entry"
+			ls -la "$SHELLENTRY" | egrep "^...x" > /dev/null || addentry "LOCKED" "$entry"
 		elif [ "$entrygid" == "$filegid" ]; then
-			ls -la "$SHELLENTRY" | egrep "^......x" > /dev/null || addentry "$entry"
+			ls -la "$SHELLENTRY" | egrep "^......x" > /dev/null || addentry "LOCKED" "$entry"
 		else
-			ls -la "$SHELLENTRY" | egrep "^.........x" > /dev/null || addentry "$entry"
+			ls -la "$SHELLENTRY" | egrep "^.........x" > /dev/null || addentry "LOCKED" "$entry"
 		fi
 	else						# if the file is not an exec
-		addentry "$entry"			# then this user is a locked one
+		addentry "LOCKED" "$entry"			# then this user is a locked one
 	fi
 done
 
