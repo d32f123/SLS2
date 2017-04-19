@@ -76,7 +76,7 @@ group@" || continue	# we found a rule
 				affectedNames="`getent group | gawk -F: -v gid=$GROUP ' $3 == gid { print $4 } ' | awk ' BEGIN { RS = "," } { print $0 } '`"
 				affectedUIDs=""
 				for name in $affectedNames; do
-					addvariable "affectedUIDs" "`getent passwd | grep \"$name\" | cut -d: -f 3`"
+					addvariable "affectedUIDs" "`getent passwd | grep \"^$name:\" | cut -d: -f 3`"
 				done
 				addvariable "affected" "$affectedUIDs"
 				if ( echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null ); then # it is an "allow" rule
@@ -107,7 +107,7 @@ everyone@)" || continue
 			fi
 			;;
 			user)
-			user="`getent passwd | grep \"\`echo $rule | cut -d: -f 2\`\" | cut -d: -f 3`"
+			user="`getent passwd | grep \"^\`echo $rule | cut -d: -f 2\`:\" | cut -d: -f 3`"
 			if ! ( echo "$foundRules" | grep "$user" >/dev/null ); then
 				echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null && foundRules="$foundRules
 $user" || continue
@@ -119,7 +119,7 @@ $user" || continue
 			fi
 			;;
 			group)
-			gid="`getent group | grep \"\`echo $rule | cut -d: -f 2\`\" | cut -d: -f 3`"
+			gid="`getent group | grep \"^\`echo $rule | cut -d: -f 2\`:\" | cut -d: -f 3`"
 			if ! ( echo "$foundRules" | grep "$gid" >/dev/null ); then
 				echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null && foundRules="$foundRules
 $user" || continue
@@ -127,7 +127,7 @@ $user" || continue
 				affectedNames="`getent group | gawk -F: -v gid=$gid ' $3 == gid { print $4 } ' | awk ' BEGIN { RS = "," } { print $0 } '`"
 				affectedUIDs=""
 				for name in $affectedNames; do
-					addvariable "affectedUIDs" "`getent passwd | grep \"$name\" | cut -d: -f 3`"
+					addvariable "affectedUIDs" "`getent passwd | grep \"^$name:\" | cut -d: -f 3`"
 				done
 				addvariable "affected" "$affectedUIDs"
 				if ( echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null ); then
@@ -153,18 +153,18 @@ else			#interacting with posix ACL
 			user)
 			uname="`echo $rule | cut -d: -f 2`"
 			uname=${uname:="`getfacl -- \"$1\" | grep "^# owner" | cut -d" " -f 3`"}
-			user="`getent passwd | grep \"^$uname\" | cut -d: -f 3`"
+			user="`getent passwd | grep \"^$uname:\" | cut -d: -f 3`"
 			echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null && addentry "$user" || addbadentry "$user"
 			;;
 			group)
 			gname="`echo $rule | cut -d: -f 2`"
 			gname=${gname:="`getfacl -- \"$1\" | grep "^# group" | cut -d" " -f 3`"}
-			gid="`getent group | grep \"$gname\" | cut -d: -f 3`"
+			gid="`getent group | grep \"^$gname:\" | cut -d: -f 3`"
 			affected="`getent passwd | gawk -F: -v gid=$gid ' $4 == gid { print $3 } '`"
 			affectedNames="`getent group | gawk -F: -v gid=$gid ' $3 == gid { print $4 } ' | awk ' BEGIN { RS = "," } { print $0 } '`"
 			affectedUIDs=""
 			for name in $affectedNames; do
-				addvariable "affectedUIDs" "`getent passwd | grep \"$name\" | cut -d: -f 3`"
+				addvariable "affectedUIDs" "`getent passwd | grep \"^$name:\" | cut -d: -f 3`"
 			done
 			addvariable "affected" "$affectedUIDs"
 			if ( echo "$rule" | cut -d: -f 3 | grep "^r" >/dev/null ); then
