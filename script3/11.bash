@@ -14,6 +14,7 @@ isZFS=false
 ls -vdq | egrep "deny|allow" >/dev/null && isZFS=true
 
 username="$1"
+username=${username:=`whoami`}
 set "`getent passwd | grep \"^$1:\" | cut -d: -f 3`"
 
 FILES="`ls -nq | grep \"^-\"`"
