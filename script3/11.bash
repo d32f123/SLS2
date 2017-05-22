@@ -37,27 +37,27 @@ for file in $FILES; do
 				owner@)
 				if $isOwner ; then
 					echo "$rule" | cut -d: -f 2 | grep "^..x" >/dev/null || continue
-					echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addvariable "GOODFILES" "$file"
+					echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addvariable "GOODFILES" "$filename"
 					break
 				fi
 				;;
 				group@)
 				if $isGroup ; then
 					echo "$rule" | cut -d: -f 2 | grep "^..x" >/dev/null || continue
-					echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addvariable "GOODFILES" "$file" 
+					echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addvariable "GOODFILES" "$filename" 
 					break
 				fi
 				;;
 				everyone@)
 				echo "$rule" | cut -d: -f 2 | grep "^..x" >/dev/null || continue
-				echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addvariable "GOODFILES" "$file"
+				echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addvariable "GOODFILES" "$filename"
 				break
 				;;
 				user)
 				user="`getent passwd | grep \"^\`echo $rule | cut -d: -f 2\`:\" | cut -d: -f 3`"
 				if [ "$user" == "$1" ]; then
 					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null || continue
-					echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null && addvariable "GOODFILES" "$file"
+					echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null && addvariable "GOODFILES" "$filename"
 					break
 				fi
 				;;
@@ -65,7 +65,7 @@ for file in $FILES; do
 				filegid="`getent group | grep \"^\`echo $rule | cut -d: -f 2 \`:\" | cut -d: -f 3`"
 				if ( getent passwd | grep "^[^:]*:[^:]*:$1:" | cut -d: -f 4 | grep "^$filegid$" >/dev/null ) || ( getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" >/dev/null ); then
 					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null || continue
-					echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null && addvariable "GOODFILES" "$file"
+					echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null && addvariable "GOODFILES" "$filename"
 					break
 				fi
 				;;
@@ -82,7 +82,7 @@ for file in $FILES; do
 				user=${user:="`getfacl -- \"$filename\" | grep \"^# owner\" | awk '{ print $3 }'`"}
 				user="`getent passwd | grep \"^$user:\" | cut -d: -f 3`"
 				if [ "$1" == "$user" ] ; then
-					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$file"
+					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$filename"
 					break
 				fi
 				;;
@@ -91,12 +91,12 @@ for file in $FILES; do
 				gname=${gname:="`getfacl -- \"$filename\" | grep "^# group" | awk '{ print $3 }'`"}
 				filegid="`getent group | grep \"^$gname:\" | cut -d: -f 3`"
 				if ( getent passwd | grep "^[^:]*:[^:]*:$1:" | cut -d: -f 4 | grep "^$filegid$" >/dev/null || getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" >/dev/null ); then
-					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$file"
+					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$filename"
 					break
 				fi
 				;;
 				other)
-				echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$file"
+				echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null && addvariable "GOODFILES" "$filename"
 				break
 				;;
 			esac

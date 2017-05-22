@@ -195,4 +195,9 @@ else			#interacting with posix ACL
 	done
 fi
 
-echo "$USERS"
+IFS="
+"
+
+for user in $USERS; do
+	getent passwd | grep "^[^:]*:[^:]*:$user:" | cut -d: -f1 | sort | uniq
+done
