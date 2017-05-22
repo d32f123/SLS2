@@ -57,19 +57,17 @@ if $isZFS ; then 	#interacting with zfs ACL
 	IFS="
 "
 	ownerRule=false
-	foundRules="owner@" # this var will keep the names of the rules we have found
+	foundRules="owner@"
 
 	for rule in $RULES; do 		#top-most rules have priority!
 		case "`echo $rule | cut -d: -f 1`" in
-			owner@) # working with file owner rule
-			if ! $ownerRule; then # if we haven't find any owner rules about read permission yet
-				echo "$rule" | cut -d: -f 2 | grep "^r" >/dev/null && ownerRule=true || continue # if it is a read rule,
-				# then we have found the important rule
-				echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addentry "$OWNER" || addbadentry "$OWNER" # if it is an "allow"
-				# rule, then add to good rules, otherwise to bad rules
+			owner@)
+			if ! $ownerRule; then
+				echo "$rule" | cut -d: -f 2 | grep "^r" >/dev/null && ownerRule=true || continue
+				echo "$rule" | cut -d: -f 4 | grep "allow" >/dev/null && addentry "$OWNER" || addbadentry "$OWNER"
 			fi
 			;;
-			group@) # working with file's owner group
+			group@)
 			if ! ( echo "$foundRules" | grep "group@" >/dev/null ); then 	# if haven't yet encountered a "r" rule
 				echo "$rule" | cut -d: -f 2 | grep "^r" >/dev/null && foundRules="$foundRules
 group@" || continue	# we found a rule
@@ -195,9 +193,4 @@ else			#interacting with posix ACL
 	done
 fi
 
-IFS="
-"
-
-for user in $USERS; do
-	getent passwd | grep "^[^:]*:[^:]*:$user:" | cut -d: -f1 | sort | uniq
-done
+echo "$USERS"
