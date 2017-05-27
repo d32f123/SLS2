@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#define LOADAVG_ARR_MAX
+#define LOADAVG_ARR_MAX 3
 
 struct proc_info 
 {

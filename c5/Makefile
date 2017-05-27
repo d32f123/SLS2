@@ -16,6 +16,7 @@ c51_c : c51_c.c c51.h
 .PHONY: clean
 
 clean:
-	rm -f less
+	rm -f c51_s
+	rm -f c51_c
 	rm -f *.o
 
