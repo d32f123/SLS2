@@ -1,5 +1,3 @@
-#define _SVID_SOURCE
-
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -16,7 +14,7 @@
 
 int main()
 {
-    pid_t pid = getpid(), pgrp = getprgrp();
+    pid_t pid = getpid(), pgrp = getpgrp();
     uid_t uid = getuid();
     time_t start_time = time(0);
     size_t memory_size = sizeof(struct proc_info);             /* total size of memory */
@@ -36,7 +34,7 @@ int main()
         _exit(SHMGET_FAILCODE);
     }
 
-    if ((shm = shmat(shmid, NULL, 0)) == (char *) -1)
+    if ((shm = shmat(shmid, NULL, 0)) == (struct proc_info *) -1)
     {
         perror("shmat syscall failed");
         _exit(SHMAT_FAILCODE);

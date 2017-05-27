@@ -1,6 +1,5 @@
 #ifndef _C51_H
 #define _C51_H
-#define _SVID_SOURCE
 
 #include <sys/types.h>
 #include <sys/loadavg.h>
