@@ -30,7 +30,7 @@ for file in $FILES; do
 		RULES="`ls -Vq | gawk -v s=0 -v file=\"$filename\" ' /^[^ \t]/ { if (s) { s = 0; } } $9 == file { s = 1 } /^[ \t]/ { if (s) print $0 } ' | sed 's/^[ \t]*//'`"
 		[ "$1" == "$owner" ] && isOwner=true || isOwner=false
 		isGroup=false
-		groups $1 && isGroup=true
+		getent group | grep "^`groups $username`:" | cut -d: -f 3 | grep "$gid" && isGroup=true
 		for rule in $RULES; do
 			case "`echo $rule | cut -d: -f 1`" in
 				owner@)
