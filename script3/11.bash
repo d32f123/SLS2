@@ -30,7 +30,7 @@ for file in $FILES; do
 		RULES="`ls -Vq | gawk -v s=0 -v file=\"$filename\" ' /^[^ \t]/ { if (s) { s = 0; } } $9 == file { s = 1 } /^[ \t]/ { if (s) print $0 } ' | sed 's/^[ \t]*//'`"
 		[ "$1" == "$owner" ] && isOwner=true || isOwner=false
 		isGroup=false
-		getent group | grep "^`groups $username`:" | cut -d: -f 3 | grep "$gid" && isGroup=true
+		getent group | grep "^`groups $username`:" | cut -d: -f 3 | grep "$gid" >/dev/null  && isGroup=true
 		for rule in $RULES; do
 			case "`echo $rule | cut -d: -f 1`" in
 				owner@)
@@ -62,7 +62,7 @@ for file in $FILES; do
 				;;
 				group)
 				filegid="`getent group | grep \"^\`echo $rule | cut -d: -f 2 \`:\" | cut -d: -f 3`"
-				if ( getent passwd | grep "^[^:]*:[^:]*:$1:" | cut -d: -f 4 | grep "^$filegid$" >/dev/null ) || ( getent group | grep "^[^:]*:[^:]*:$filegid:" | cut -d: -f 4 | egrep ",*$1,*" >/dev/null ); then
+				if ( getent group | grep "^`groups \"$user\"`:" | cut -d: -f 3 | grep "$filegid" >/dev/null ); then
 					echo "$rule" | cut -d: -f 3 | grep "^..x" >/dev/null || continue
 					echo "$rule" | cut -d: -f 5 | grep "allow" >/dev/null && addvariable "GOODFILES" "$filename"
 					break
