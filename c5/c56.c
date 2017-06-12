@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <time.h>
+#include <stdlib.h>
 
 #include "errors.h"
 
