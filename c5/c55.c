@@ -22,6 +22,7 @@ void * invert_letters()
 {
 	struct sembuf lock = {1, -1, SEM_UNDO};
 	struct sembuf unlock = {0, 1, SEM_UNDO};
+	static char curr_low = 1; /* if letters are currently in lower register */
 
 	while(1) 
 	{
@@ -104,7 +105,7 @@ int main()
 	while(1)
 	{
 
-		printf("%s\n", letter);
+		printf("%s\n", letters);
 
 		unlock.sem_num = launch_first ? 1 : 2;
 		if (semop(s_id, &unlock, 1) == -1)
@@ -121,6 +122,7 @@ int main()
 			return SEMOP_FAILCODE;
 		}
 
+		launch_first = !launch_first;
 	}
 
 	
