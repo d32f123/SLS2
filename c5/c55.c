@@ -1,20 +1,25 @@
-#include <semaphore.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <errno.h>
 #include <unistd.h>
+
+#include <pthread.h>
+#include <semaphore.h>
 #include <signal.h>
+
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
+#include "errors.h"
 
-char letter[26] = "abcdefghijklmnopqrstuvwxyz";
+#define LETTERS_SIZE 26
+
+char letters[LETTERS_SIZE] = "abcdefghijklmnopqrstuvwxyz";
+
 int s_id;
 
-void* invert()
+void * invert_letters()
 {
-	
 	struct sembuf lock = {1, -1, SEM_UNDO};
 	struct sembuf unlock = {0, 1, SEM_UNDO};
 
@@ -28,10 +33,11 @@ void* invert()
 			return NULL;
 		}
 
-		for ( i = 0; i < 26; i++)
+		for (i = 0; i < LETTERS_SIZE; ++i)
 		{
-			letter[i] += (letter[i] >= 'a') ? -32 : 32;
+			letters[i] += curr_low ? -32 : 32;
 		}	
+		curr_low = !curr_low;
 		
 		if (semop(s_id, &unlock, 1) == -1)
 		{
@@ -43,27 +49,27 @@ void* invert()
 	return NULL; 
 }
 
-void* reorder()
+void * inverse_letters()
 {
 	struct sembuf lock = {2, -1, SEM_UNDO};
 	struct sembuf unlock = {0, 1, SEM_UNDO};
 
 	while(1) 
 	{
+		int i = 0;
+		char swap;
+
 		if (semop(s_id, &lock, 1) == -1)
 		{
 			perror("semop");
 			return NULL;
 		}
-		
-		int i = 0;
-		char t;
 	
-		for ( i = 0; i < 13; i++)
+		for (i = 0; i < LETTERS_SIZE / 2; ++i)
 		{
-			t  = letter[i];
-			letter[i] = letter[25-i];
-			letter[25-i] = t; 
+			swap = letters[i];
+			letters[i] = letters[LETTERS_SIZE - i - 1];
+			letters[LETTERS_SIZE - i - 1] = swap; 
 		}
 	
 		if (semop(s_id, &unlock, 1) == -1)
@@ -74,11 +80,6 @@ void* reorder()
 	}
 	return NULL;
 }
-void handle_sig(int sig_number)
-{
-	(void)sig_number;
-	_exit(0);
-}
 
 int main()
 {
@@ -86,16 +87,17 @@ int main()
 	pthread_t thread2;
 	struct sembuf lock = {0, -1, SEM_UNDO};
 	struct sembuf unlock = {1, 1, SEM_UNDO};
+	char launch_first = 1;
 
-	s_id = semget(IPC_PRIVATE, 3, 0600);
+	s_id = semget(IPC_PRIVATE, 3, 0666);
 	if (s_id == -1)
 	{
 		perror("semget");
-		return 1;
+		return SEMGET_FAILCODE;
 	}
 
-	pthread_create(&thread1, NULL, invert, NULL);
-	pthread_create(&thread2, NULL, reorder, NULL);
+	pthread_create(&thread1, NULL, invert_letters, NULL);
+	pthread_create(&thread2, NULL, inverse_letters, NULL);
 
 	
 
@@ -104,11 +106,11 @@ int main()
 
 		printf("%s\n", letter);
 
-		unlock.sem_num = 3 - unlock.sem_num;
+		unlock.sem_num = launch_first ? 1 : 2;
 		if (semop(s_id, &unlock, 1) == -1)
 		{
 			perror("semop");
-			return 1;
+			return SEMOP_FAILCODE;
 		}
 
 		sleep(1);
@@ -116,7 +118,7 @@ int main()
 		if (semop(s_id, &lock, 1) == -1)
 		{
 			perror("semop");
-			return 1;
+			return SEMOP_FAILCODE;
 		}
 
 	}

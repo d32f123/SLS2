@@ -31,7 +31,7 @@ void * invert_letters()
 	return NULL; 
 }
 
-void* inverse_letters()
+void * inverse_letters()
 {
 	while(1) 
 	{

@@ -8,5 +8,7 @@
 #define SHMGET_FAILCODE 3
 #define SHMAT_FAILCODE 4
 #define SEMINIT_FAILCODE 5
+#define SEMGET_FAILCODE 6
+#define SEMOP_FAILCODE 7
 
 #endif
