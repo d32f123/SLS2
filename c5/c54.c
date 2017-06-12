@@ -22,10 +22,10 @@ void * invert_letters()
 	
 		for (i = 0; i < LETTERS_SIZE; ++i)
 		{
-			letters[i] += curr_low ? 32 : -32;
-			curr_low = !curr_low;
+			letters[i] += curr_low ? -32 : 32;
+			
 		}	
-		
+		curr_low = !curr_low;
 		sem_post(sem_array);
 	}
 	return NULL; 
@@ -50,16 +50,6 @@ void* inverse_letters()
 		sem_post(sem_array);
 	}
 	return NULL;
-}
-
-void handle_sig(int sig_number)
-{
-	int i;
-	for (i = 0; i < 3; i++)
-	{
-		sem_destroy(&semaphor[i]);
-	}
-	_exit(0);
 }
 
 int main()
