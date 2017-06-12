@@ -1,7 +1,7 @@
 CURSEBASE = $$HOME/ncurses
 
 CC = gcc
-CFLAGS = -std=c89 -I. -O0 -g -Wall
+CFLAGS = -I. -O0 -g -Wall
 
 DEPS = c51.h
 
@@ -24,7 +24,7 @@ c55 : c55.c errors.h
 	$(CC) $(CFLAGS) -lrt -lpthread -o $@ c55.c
 
 c56 : c56.c errors.h
-	$(CC) $(CFLAGS) -lpthread -o $@ c56.c
+	$(CC) $(CFLAGS) -lrt -lpthread -o $@ c56.c
 
 .PHONY: clean
 

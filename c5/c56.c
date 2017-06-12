@@ -13,7 +13,7 @@
 char letters[LETTERS_SIZE] = "abcdefghijklmnopqrstuvwxyz";
 pthread_mutex_t mutex;
 
-struct timespec delays[3]; /* main, invert, inverse */ 
+useconds_t delays[3]; /* main, invert, inverse */ 
 
 void * invert_letters()
 {
@@ -31,7 +31,7 @@ void * invert_letters()
 		
 		pthread_mutex_unlock(&mutex);
 
-		nanosleep(&delays[1], NULL);
+		usleep(delays[1]);
 	}
 	return NULL; 
 }
@@ -54,7 +54,7 @@ void * inverse_letters()
 	
 		pthread_mutex_unlock(&mutex);
 
-		nanosleep(&delays[2], NULL);
+		usleep(delays[2]);
 	}
 	return NULL;
 }
@@ -67,11 +67,10 @@ int main(int argc, char * argv[])
 	
 	for (i = 1; i < 3; ++i)
 	{
-		delays[i - 1].tv_nsec = i < argc ? strtol(argv[i], NULL, 10) * 1000 * 1000: 1000000000;
-		delays[i - 1].tv_sec = 0;
-		if (delays[i - 1].tv_nsec <= 0)
+		delays[i - 1] = i < argc ? strtol(argv[i], NULL, 10) * 1000: 1000000;
+		if (delays[i - 1] <= 0)
 		{
-			delays[i - 1].tv_nsec = 1000 * 1000 * 1000;
+			delays[i - 1] = 1000000;
 		}
 	}
 
@@ -87,7 +86,7 @@ int main(int argc, char * argv[])
 		printf("%s\n", letters);
 		pthread_mutex_unlock(&mutex);
 
-		nanosleep(&delays[0], NULL);
+		usleep(delays[0]);
 	}
 
 	
