@@ -12,28 +12,13 @@
 #include <sys/un.h>
 #include <fcntl.h>
 
-#include "struct.h"
+#include "c51.h"
 
-#define FILE_PATH "test"
+#define FILE_PATH "socket"
 
-struct data* info;
+struct proc_info info;
 time_t start_time;
 int fd;
-
-void write_info()
-{
-	info->pid = getpid();
-	info->uid = getuid();
-	info->gid = getgid();
-	info->time = 0;
-	getloadavg(info->loadsystemtime, LOADAVG_NSTATS); 
-}
-
-void update_info()
-{
-	info->time = time(NULL) - start_time;	
-	getloadavg(info->loadsystemtime, LOADAVG_NSTATS); 
-}
 
 void handle_sig(int sig_number)
 {
@@ -46,6 +31,16 @@ int main()
 {
 	struct sockaddr_un addr;
 	int client, flags;
+	pid_t pid = getpid(), pgrp = getpgrp();
+    uid_t uid = getuid();
+    time_t start_time = time(0);
+    size_t memory_size = sizeof(struct proc_info);             /* total size of memory */
+	
+	if (start_time == (time_t)-1)
+    {
+        perror("time syscall failed");
+        _exit(TIMECALL_FAILCODE);
+    }
 
 	start_time = time(NULL);	
 
@@ -56,42 +51,56 @@ int main()
 
 	unlink(FILE_PATH);
  
-        if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+    if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
 	{
-        	perror("socket");
-                return 1;
-        }
+		perror("socket");
+		return 1;
+	}
 
-        memset(&addr, 0, sizeof(addr));
-        addr.sun_family = AF_UNIX;
-        strcpy(addr.sun_path, FILE_PATH);
+	memset(&addr, 0, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+	strcpy(addr.sun_path, FILE_PATH);
 
-        if(bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) 
+	if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) 
 	{
-                perror("bind");
-                return 1;
-        }
+		perror("bind");
+		return 1;
+	}
 
-        if(listen(fd, 10) == -1) 
+	if(listen(fd, 10) == -1) 
 	{
-                perror("listen");
-                return 1;
-        }
+		perror("listen");
+		return 1;
+	}
 
-        flags = fcntl(fd, F_GETFL, 0);
-        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+	flags = fcntl(fd, F_GETFL, 0);
+	fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-	info = malloc(sizeof(struct data));
-
-	write_info();
+	info.pid = pid;
+	info.pgrp = pgrp;
+	info.uid = uid;
 
 	while (1)
 	{
-		update_info();
-		client = accept(fd, NULL, NULL);
-		if(client != -1) 
+		time_t curr_time = time(0);
+        if (curr_time == (time_t)-1)
+        {
+            perror("time syscall failed");
+            shmctl(key, IPC_RMID, NULL);
+            _exit(TIMECALL_FAILCODE);
+        }
+
+		info.time_since_start = curr_time - start_time;
+
+        if (getloadavg(info.loadavg_arr, LOADAVG_ARR_MAX) == -1)
+        {
+            perror("loadavg function call failed");
+            _exit(LOADAVG_FAILCODE);
+        }
+
+		while ((client = accept(fd, NULL, NULL)) != -1)
 		{
-			write(client, info, sizeof(struct data));
+			write(client, &info, sizeof(struct proc_info));
 		}
 		sleep(1);
 	}

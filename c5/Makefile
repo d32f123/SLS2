@@ -26,6 +26,12 @@ c55 : c55.c errors.h
 c56 : c56.c errors.h
 	$(CC) $(CFLAGS) -lrt -lpthread -o $@ c56.c
 
+c58_s : c58_s.c c51.h errors.h
+	$(CC) $(CFLAGS) -o $@ c58_s.c
+
+c58_c : c58_c.c c51.h errors.h
+	$(CC) $(CFLAGS) -o $@ c58_c.c
+
 .PHONY: clean
 
 clean:
