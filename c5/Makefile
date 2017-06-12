@@ -18,12 +18,13 @@ c51_c : c51_c.c c51.h errors.h
 	$(CC) $(CFLAGS) -o $@ c51_c.c
 
 c54 : c54.c errors.h
-	$(CC) $(CFLAGS) -o $@ c54.c
+	$(CC) $(CFLAGS) -lrt -lpthread -o $@ c54.c
 
 .PHONY: clean
 
 clean:
 	rm -f c51_s
 	rm -f c51_c
+	rm -f c54
 	rm -f *.o
 

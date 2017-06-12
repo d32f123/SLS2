@@ -6,6 +6,7 @@
 #include <semaphore.h>
 #include <signal.h>
 
+#include "errors.h"
 
 #define LETTERS_SIZE 26
 
@@ -23,7 +24,6 @@ void * invert_letters()
 		for (i = 0; i < LETTERS_SIZE; ++i)
 		{
 			letters[i] += curr_low ? -32 : 32;
-			
 		}	
 		curr_low = !curr_low;
 		sem_post(sem_array);
@@ -40,11 +40,11 @@ void* inverse_letters()
 
 		sem_wait(sem_array + 2);
 	
-		for (i = 0; i < LETTER_SIZE / 2; ++i)
+		for (i = 0; i < LETTERS_SIZE / 2; ++i)
 		{
 			swap = letters[i];
-			letter[i] = letters[LETTER_SIZE - i - 1];
-			letter[LETTER_SIZE - i - 1] = swap; 
+			letters[i] = letters[LETTERS_SIZE - i - 1];
+			letters[LETTERS_SIZE - i - 1] = swap; 
 		}
 	
 		sem_post(sem_array);
@@ -75,7 +75,7 @@ int main()
 	{
 	
 		sem_wait(&sem_array[0]);
-		printf("%s\n", letter);
+		printf("%s\n", letters);
 
 		sem_post(&sem_array[launch_first ? 1 : 2]);
 		launch_first = !launch_first;
