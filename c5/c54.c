@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include <pthread.h>
 #include <semaphore.h>
@@ -13,6 +14,20 @@
 
 char letters[LETTERS_SIZE] = "abcdefghijklmnopqrstuvwxyz";
 sem_t sem_array[3];
+
+void sig_handler(int signo)
+{
+	if (signo == SIGINT)
+	{
+		int i;
+		printf("%s\n", "Destroying semaphors");
+		for (i = 0; i < 3; ++i)
+		{
+			sem_destroy(sem_array + i);
+		}	
+		_exit(0);
+	}
+}
 
 void * invert_letters()
 {
@@ -59,6 +74,9 @@ int main()
 	pthread_t thread2;
 	int i;
 	char launch_first = 1;
+
+	if (signal(SIGINT, sig_handler) == SIG_ERR)
+		perror("Could not catch SIGINT\n");
 
 	for (i = 0; i < 3; i++)
 	{

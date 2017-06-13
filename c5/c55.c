@@ -82,6 +82,16 @@ void * inverse_letters()
 	return NULL;
 }
 
+void sig_handler(int signo)
+{
+	if (signo == SIGINT)
+	{
+		printf("%s\n", "Removing semaphores");
+		semctl(s_id, 0, IPC_RMID);
+		_exit(0);
+	}
+}
+
 int main()
 {
 	pthread_t thread1;
@@ -94,8 +104,11 @@ int main()
 	if (s_id == -1)
 	{
 		perror("semget");
-		return SEMGET_FAILCODE;
+		_exit(SEMGET_FAILCODE);
 	}
+
+	if (signal(SIGINT, sig_handler) == SIG_ERR)
+		perror("Could not catch SIGINT\n");
 
 	pthread_create(&thread1, NULL, invert_letters, NULL);
 	pthread_create(&thread2, NULL, inverse_letters, NULL);
@@ -111,7 +124,7 @@ int main()
 		if (semop(s_id, &unlock, 1) == -1)
 		{
 			perror("semop");
-			return SEMOP_FAILCODE;
+			_exit(SEMOP_FAILCODE);
 		}
 
 		sleep(1);
@@ -119,7 +132,7 @@ int main()
 		if (semop(s_id, &lock, 1) == -1)
 		{
 			perror("semop");
-			return SEMOP_FAILCODE;
+			_exit(SEMOP_FAILCODE);
 		}
 
 		launch_first = !launch_first;

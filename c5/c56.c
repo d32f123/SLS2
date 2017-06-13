@@ -60,6 +60,16 @@ void * inverse_letters()
 	return NULL;
 }
 
+void sig_handler(int signo)
+{
+	if (signo == SIGINT)
+	{
+		printf("%s\n", "Destroying mutex");
+		pthread_mutex_destroy(&mutex);
+		_exit(0);
+	}
+}
+
 int main(int argc, char * argv[])
 {
 	pthread_t thread1;
@@ -76,6 +86,9 @@ int main(int argc, char * argv[])
 	}
 
 	pthread_mutex_init(&mutex, NULL);
+
+	if (signal(SIGINT, sig_handler) == SIG_ERR)
+		perror("Could not catch SIGINT\n");
 
 	pthread_create(&thread1, NULL, invert_letters, NULL);
 	pthread_create(&thread2, NULL, inverse_letters, NULL);

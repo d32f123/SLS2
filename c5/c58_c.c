@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
@@ -29,7 +28,7 @@ int main()
 	if((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
 	{
 		perror("socket");
-		return 1;
+		_exit(SOCKET_FAILCODE);
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -39,13 +38,13 @@ int main()
 	if(connect(fd, (struct sockaddr *) &addr, sizeof(addr)) == -1)  
 	{
 		perror("connect");
-		return 1;
+		_exit(CONNECT_FAILCODE);
 	}
 
 	if(read(fd, &info, sizeof(struct proc_info)) != sizeof(struct proc_info))
 	{
 		printf("Read error!\n");
-		return 1; 
+		_exit(READ_FAILCODE);
 	}
 
 	

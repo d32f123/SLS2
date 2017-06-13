@@ -1,4 +1,3 @@
-#define _XOPEN_SOURCE 500
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/mman.h>
@@ -21,11 +20,14 @@ struct proc_info info;
 time_t start_time;
 int fd;
 
-void handle_sig(int sig_number)
+void sig_handler(int signo)
 {
-	(void)sig_number;
-	close(fd);
-	_exit(0);	
+	if (signo == SIGINT)
+	{
+		printf("%s\n", "Closing socket");
+		close(fd);
+		_exit(0);
+	}
 }
 
 int main() 
@@ -35,7 +37,6 @@ int main()
 	pid_t pid = getpid(), pgrp = getpgrp();
     	uid_t uid = getuid();
     	time_t start_time = time(0);
-	struct sigaction sig;
 
 	if (start_time == (time_t)-1)
     	{
@@ -45,18 +46,16 @@ int main()
 
 	start_time = time(NULL);	
 
-	
-	memset(&sig, 0, sizeof(struct sigaction));
-	sig.sa_handler = handle_sig;
-	sigaction(SIGINT, &sig, NULL);
-
 	unlink(FILE_PATH);
  
     	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
 	{
 		perror("socket");
-		return 1;
+		_exit(SOCKET_FAILCODE);
 	}
+
+	if (signal(SIGINT, sig_handler) == SIG_ERR)
+		printf("Could not catch SIGINT\n");
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -65,13 +64,13 @@ int main()
 	if (bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1) 
 	{
 		perror("bind");
-		return 1;
+		_exit(BIND_FAILCODE);
 	}
 
 	if(listen(fd, 10) == -1) 
 	{
 		perror("listen");
-		return 1;
+		_exit(LISTEN_FAILCODE);
 	}
 
 	flags = fcntl(fd, F_GETFL, 0);

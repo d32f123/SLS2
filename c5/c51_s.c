@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdio.h>
+#include <signal.h>
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -12,13 +13,24 @@
 #include "errors.h"
 #include "c51.h"
 
+int shmid;
+
+void sig_handler(int signo)
+{
+	if (signo == SIGINT)
+	{
+		printf("%s", "Removing shared memory region\n");
+		shmctl(shmid, IPC_RMID, NULL);
+		_exit(0);
+	}
+}
+
 int main()
 {
     pid_t pid = getpid(), pgrp = getpgrp();
     uid_t uid = getuid();
     time_t start_time = time(0);
     size_t memory_size = sizeof(struct proc_info);             /* total size of memory */
-    int shmid;
     key_t key = 5678;
     struct proc_info * shm;
 
@@ -39,6 +51,10 @@ int main()
         perror("shmat syscall failed");
         _exit(SHMAT_FAILCODE);
     }
+
+    if (signal(SIGINT, sig_handler) == SIG_ERR)
+    	perror("Could not catch SIGINT\n");
+	
 
     shm->pid = pid;
     shm->pgrp = pgrp;
