@@ -66,6 +66,7 @@ int main()
         if (curr_time == (time_t)-1)
         {
             perror("time syscall failed");
+            shmdt(shm);
             shmctl(key, IPC_RMID, NULL);
             _exit(TIMECALL_FAILCODE);
         }
@@ -75,6 +76,7 @@ int main()
         if (getloadavg(shm->loadavg_arr, LOADAVG_ARR_MAX) == -1)
         {
             perror("loadavg function call failed");
+            shmdt(shm);
             shmctl(key, IPC_RMID, NULL);
             _exit(LOADAVG_FAILCODE);
         }
